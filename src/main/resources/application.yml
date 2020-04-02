@@ -1,0 +1,9 @@
+spring.main.web-application-type: none
+
+
+tsing-jtt1078:
+  server:
+    port: 1077
+    host: 0.0.0.0
+    app: /tsinglive/
+    livePort: 1079
