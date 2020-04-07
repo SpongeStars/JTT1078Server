@@ -7,10 +7,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.EventLoop;
 import io.netty.util.ReferenceCountUtil;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -34,8 +32,6 @@ public class SubscribeChannel {
 
     private final CopyOnWriteArrayList<Subscriber> subscribers = new CopyOnWriteArrayList<>();
 
-    private LocalDateTime time = LocalDateTime.now();
-
     public void setSequenceHeader(ByteBuf sequenceHeader) {
         if (sequenceHeaderStatus.compareAndSet(0, 1)) {
             this.sequenceHeader = sequenceHeader;
@@ -48,14 +44,11 @@ public class SubscribeChannel {
 
     AtomicInteger sequenceHeaderStatus = new AtomicInteger(0);
 
-    private AtomicBoolean isDestory = new AtomicBoolean(false);
-
     public SubscribeChannel (String channel) {
         this.channel = channel;
     }
 
     public SubscribeChannel subscribe (Subscriber subscriber) {
-        time = LocalDateTime.now();
         if (sequenceHeader != null) {
             sequenceHeader.retain();
             subscriber.getChannel().writeAndFlush(sequenceHeader.slice(), subscriber.getChannel().voidPromise());
@@ -66,18 +59,6 @@ public class SubscribeChannel {
 
     public boolean hasInitSequenceHeader () {
         return sequenceHeader != null;
-    }
-
-    public LocalDateTime getTime () {
-        return time;
-    }
-
-    public boolean updateStatus (boolean expect, boolean update) {
-        return isDestory.compareAndSet(expect, update);
-    }
-
-    public boolean getStatus () {
-        return isDestory.get();
     }
 
     public void unSubscribe (Subscriber subscriber) {
