@@ -1,6 +1,6 @@
 package com.tsingtech.jtt1078.standard;
 
-import com.tsingtech.jtt1078.config.JT1078ServerProperties;
+import com.tsingtech.jtt1078.config.JTT1078ServerProperties;
 import com.tsingtech.jtt1078.handler.Jtt1078ServerChannelInitializer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -19,22 +19,17 @@ import org.springframework.stereotype.Component;
  * Mail: gwarmdll@gmail.com
  */
 @Component
-public class JT1078Server implements SmartInitializingSingleton {
+public class JTT1078Server implements SmartInitializingSingleton {
 
     @Autowired
-    JT1078ServerProperties jt1078ServerProperties;
+    JTT1078ServerProperties JTT1078ServerProperties;
 
     @Override
     public void afterSingletonsInstantiated() {
-        try {
-            System.setProperty("io.netty.leakDetection.targetRecords", "32");
-            init();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        init();
     }
 
-    public void init() throws InterruptedException {
+    public void init() {
         EventLoopGroup boss = new NioEventLoopGroup();
         EventLoopGroup worker = new NioEventLoopGroup();
         ServerBootstrap bootstrap = new ServerBootstrap();
@@ -49,7 +44,7 @@ public class JT1078Server implements SmartInitializingSingleton {
                 .childHandler(new Jtt1078ServerChannelInitializer());
 
         ChannelFuture channelFuture;
-        channelFuture = bootstrap.bind(jt1078ServerProperties.getPort());
+        channelFuture = bootstrap.bind(JTT1078ServerProperties.getPort());
         bootstrap.bind(1079);
 
         channelFuture.addListener(future -> {
