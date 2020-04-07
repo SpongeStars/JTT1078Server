@@ -1,7 +1,9 @@
 package com.tsingtech.jtt1078.live.publish;
 
 import com.tsingtech.jtt1078.live.subscriber.Subscriber;
+import com.tsingtech.jtt1078.vo.AudioPacket;
 import com.tsingtech.jtt1078.vo.DataPacket;
+import com.tsingtech.jtt1078.vo.VideoPacket;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.ReferenceCountUtil;
 
@@ -58,7 +60,18 @@ public enum PublishManager {
         }
     }
 
-    public void publish(String streamId, DataPacket dataPacket) {
+    public void publish(String streamId, AudioPacket dataPacket) {
+        SubscribeChannel subscribeChannel = channels.get(streamId);
+        try {
+            if (subscribeChannel != null) {
+                subscribeChannel.publishFrame(dataPacket);
+            }
+        } finally {
+            ReferenceCountUtil.safeRelease(dataPacket.getBody());
+        }
+    }
+
+    public void publish(String streamId, VideoPacket dataPacket) {
         SubscribeChannel subscribeChannel = channels.get(streamId);
         try {
             if (subscribeChannel != null) {

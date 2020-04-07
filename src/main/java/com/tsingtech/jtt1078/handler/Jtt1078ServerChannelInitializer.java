@@ -1,6 +1,6 @@
 package com.tsingtech.jtt1078.handler;
 
-import com.tsingtech.jtt1078.codec.JT1078FrameDecoder;
+import com.tsingtech.jtt1078.codec.JTT1078FrameDecoder;
 import com.tsingtech.jtt1078.config.JT1078ServerProperties;
 import com.tsingtech.jtt1078.live.handler.HttpServerHandler;
 import com.tsingtech.jtt1078.util.BeanUtil;
@@ -27,8 +27,8 @@ public class Jtt1078ServerChannelInitializer extends ChannelInitializer<NioSocke
                     .addLast(new HttpObjectAggregator(65536))
                     .addLast(INSTANCE);
         } else if (ch.localAddress().getPort() == jt1078ServerProperties.getPort()){
-            ch.pipeline().addLast(new JT1078FrameDecoder()).addLast(new MediaMessageHandler())
-            .addLast(exceptionHandler);
+            ch.pipeline().addLast(new JTT1078FrameDecoder()).addLast(new VideoMessageHandler())
+                    .addLast(new AudioMessageHandler()).addLast(exceptionHandler);
         }
     }
 }

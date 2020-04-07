@@ -14,4 +14,9 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class AudioPacket extends DataPacket {
     private byte _audioFlag;
+
+    @Override
+    public DataPacket newInstance() {
+        return new AudioPacket();
+    }
 }

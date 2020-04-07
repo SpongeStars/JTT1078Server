@@ -16,6 +16,7 @@ public class ExceptionHandler extends ChannelDuplexHandler {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         // Uncaught exceptions from inbound handlers will propagate up to this handler
         cause.printStackTrace();
+        releaseResource(ctx);
     }
 
     @Override
@@ -33,5 +34,10 @@ public class ExceptionHandler extends ChannelDuplexHandler {
     @Override
     public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
         ctx.close(promise);
+        releaseResource(ctx);
+    }
+
+    private void releaseResource(ChannelHandlerContext ctx) {
+        ctx.pipeline().get(VideoMessageHandler.class).close();
     }
 }

@@ -13,7 +13,7 @@ import lombok.experimental.Accessors;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-public class DataPacket {
+public abstract class DataPacket {
 
     protected byte[] simRaw;
 
@@ -42,4 +42,6 @@ public class DataPacket {
         }
         return stringBuilder.toString();
     }
+
+    public abstract DataPacket newInstance ();
 }

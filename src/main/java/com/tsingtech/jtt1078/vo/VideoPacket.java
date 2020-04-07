@@ -16,4 +16,9 @@ public class VideoPacket extends DataPacket {
     private int LIFI;
     private int LFI;
 
+
+    @Override
+    public DataPacket newInstance() {
+        return new VideoPacket();
+    }
 }
