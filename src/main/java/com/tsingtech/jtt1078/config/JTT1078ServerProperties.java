@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Data
-@ConfigurationProperties(JT1078ServerProperties.PREFIX)
-public class JT1078ServerProperties {
+@ConfigurationProperties(JTT1078ServerProperties.PREFIX)
+public class JTT1078ServerProperties {
 
     public static final String PREFIX = "tsing-jtt1078.server";
 
