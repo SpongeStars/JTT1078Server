@@ -1,13 +1,12 @@
 package com.tsingtech.jtt1078.handler;
 
 import com.tsingtech.jtt1078.live.publish.PublishManager;
+import com.tsingtech.jtt1078.live.publish.SubscribeChannel;
 import com.tsingtech.jtt1078.vo.DataPacket;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
-
-import java.time.LocalDateTime;
 
 /**
  * @author chrisliu
@@ -23,6 +22,8 @@ public abstract class AbstractMediaMessageHandler<T extends DataPacket> extends 
     protected void channelRead0(ChannelHandlerContext ctx, T subPacket) throws Exception {
         if (streamId == null) {
             streamId = String.join("/", subPacket.getSim(), String.valueOf(subPacket.getLogicChannel()));
+            SubscribeChannel subscribeChannel = PublishManager.INSTANCE.getSubscribeChannel(streamId);
+            subscribeChannel.setEventLoop(ctx.channel().eventLoop());
             System.out.println(streamId);
         }
         switch(subPacket.getPacketPlace()) {
@@ -34,7 +35,7 @@ public abstract class AbstractMediaMessageHandler<T extends DataPacket> extends 
                 if (subPacket.getBody().getByte(0) != 0) {
                     System.out.println("====");
                 }
-                publish(dataPacket);
+                publish(subPacket);
                 break;
             case 1:
                 dataPacket = subPacket;
@@ -52,7 +53,6 @@ public abstract class AbstractMediaMessageHandler<T extends DataPacket> extends 
                 if (compositeByteBuf.getByte(compositeByteBuf.readerIndex()) != 0) {
                     System.out.println("====");
                 }
-                System.out.println(LocalDateTime.now());
                 dataPacket.setBody(compositeByteBuf
                         .addComponent(true, subPacket.getBody()));
                 publish(dataPacket);

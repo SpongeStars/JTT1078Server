@@ -20,24 +20,22 @@ public enum PublishManager {
 
     private final static ConcurrentMap<String, SubscribeChannel> channels = new ConcurrentHashMap<>();
 
-    public void subscribe (Subscriber subscriber) {
-        SubscribeChannel subscribeChannel = channels.get(subscriber.getStreamId());
+    public SubscribeChannel getSubscribeChannel (String streamId) {
+        SubscribeChannel subscribeChannel = channels.get(streamId);
         if (subscribeChannel == null) {
-            subscribeChannel = new SubscribeChannel(subscriber.getStreamId()).subscribe(subscriber);
-            if ((subscribeChannel = channels.putIfAbsent(subscriber.getStreamId(), subscribeChannel)) != null) {
-                subscribeChannel.subscribe(subscriber);
-            }
-        } else {
-            if (!subscribeChannel.getStatus()) {
-                subscribeChannel.subscribe(subscriber);
+            subscribeChannel = new SubscribeChannel(streamId);
+            SubscribeChannel pre = channels.putIfAbsent(streamId, subscribeChannel);
+            if (pre == null) {
+                return subscribeChannel;
             } else {
-                releaseSubscribeChannel(subscriber.getStreamId(), subscribeChannel);
-                subscribeChannel = new SubscribeChannel(subscriber.getStreamId()).subscribe(subscriber);
-                if ((subscribeChannel = channels.putIfAbsent(subscriber.getStreamId(), subscribeChannel)) != null) {
-                    subscribeChannel.subscribe(subscriber);
-                }
+                return channels.get(streamId);
             }
         }
+        return subscribeChannel;
+    }
+
+    public void subscribe (Subscriber subscriber) {
+        getSubscribeChannel(subscriber.getStreamId()).subscribe(subscriber);
     }
 
     private void releaseSubscribeChannel(String streamId, SubscribeChannel subscribeChannel) {
@@ -47,10 +45,7 @@ public enum PublishManager {
     }
 
     public void releaseSingleChannel(String streamId) {
-        SubscribeChannel subscribeChannel = channels.remove(streamId);
-        if (subscribeChannel != null) {
-            subscribeChannel.destorySubscribes();
-        }
+        channels.remove(streamId).destorySubscribes();
     }
 
     public void unSubscribe (Subscriber subscriber) {
@@ -61,32 +56,23 @@ public enum PublishManager {
     }
 
     public void publish(String streamId, AudioPacket dataPacket) {
-        SubscribeChannel subscribeChannel = channels.get(streamId);
         try {
-            if (subscribeChannel != null) {
-                subscribeChannel.publishFrame(dataPacket);
-            }
+            channels.get(streamId).publishFrame(dataPacket);
         } finally {
             ReferenceCountUtil.safeRelease(dataPacket.getBody());
         }
     }
 
     public void publish(String streamId, VideoPacket dataPacket) {
-        SubscribeChannel subscribeChannel = channels.get(streamId);
         try {
-            if (subscribeChannel != null) {
-                subscribeChannel.publishFrame(dataPacket);
-            }
+            channels.get(streamId).publishFrame(dataPacket);
         } finally {
             ReferenceCountUtil.safeRelease(dataPacket.getBody());
         }
     }
 
     public void storeSequenceHeader(String streamId, ByteBuf sequenceHeader) {
-        SubscribeChannel subscribeChannel = channels.get(streamId);
-        if (subscribeChannel != null) {
-            subscribeChannel.setSequenceHeader(sequenceHeader);
-        }
+        channels.get(streamId).setSequenceHeader(sequenceHeader);
     }
 
     public boolean hasInitSequenceHeader(String streamId) {
