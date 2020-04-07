@@ -1,8 +1,9 @@
 package com.tsingtech.jtt1078.live.handler;
 
 import com.tsingtech.jtt1078.live.publish.PublishManager;
-import com.tsingtech.jtt1078.vo.DataPacket;
+import com.tsingtech.jtt1078.vo.AudioPacket;
 import com.tsingtech.jtt1078.vo.PacketWrapper;
+import com.tsingtech.jtt1078.vo.VideoPacket;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufUtil;
@@ -13,8 +14,6 @@ import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
 
-import java.time.LocalDateTime;
-
 /**
  * Author: chrisliu
  * Date: 2020-03-02 09:19
@@ -22,6 +21,11 @@ import java.time.LocalDateTime;
  */
 public class SrsFlvMuxerHandler extends ChannelOutboundHandlerAdapter {
     private int naluSeparatorSize;
+    private String streamId;
+
+    public SrsFlvMuxerHandler (String streamId) {
+        this.streamId = streamId;
+    }
 
     // E.4.3.1 VIDEODATA
     // Frame Type UB [4]
@@ -172,7 +176,7 @@ public class SrsFlvMuxerHandler extends ChannelOutboundHandlerAdapter {
     }
 
     private static void muxVideoDataHeader(ByteBuf fvlTag, int frame_type,
-                                           int avc_packet_type, int dts, int pts) {
+                                           int avc_packet_type, int cts) {
         // for h264 in RTMP video payload, there is 5bytes header:
         //      1bytes, FrameType | CodecID
         //      1bytes, AVCPacketType
@@ -191,16 +195,16 @@ public class SrsFlvMuxerHandler extends ChannelOutboundHandlerAdapter {
         // pts = dts + cts, or
         // cts = pts - dts.
         // where cts is the header in rtmp video packet payload header.
-        int cts = pts - dts;
+//        int cts = pts - dts;
         fvlTag.writeByte(cts >> 16);
         fvlTag.writeByte(cts >> 8);
         fvlTag.writeByte(cts);
     }
 
-    private static ByteBuf muxNalusFlvHeader(ByteBufAllocator allocator, int frameType, int dts, int datasize) {
+    private static ByteBuf muxNalusFlvHeader(ByteBufAllocator allocator, int frameType, int dts, int datasize, int cts) {
         ByteBuf flvTag = allocator.directBuffer(20);
         muxVideoTagHeader(flvTag, datasize + 9, dts);
-        muxVideoDataHeader(flvTag, frameType, SrsCodecVideoAVCType.NALU, 0, 0);
+        muxVideoDataHeader(flvTag, frameType, SrsCodecVideoAVCType.NALU, cts);
         flvTag.writeInt(datasize);
         return flvTag;
     }
@@ -211,7 +215,7 @@ public class SrsFlvMuxerHandler extends ChannelOutboundHandlerAdapter {
 
         muxVideoTagHeader(flvTag, dataSize, 0);
 
-        muxVideoDataHeader(flvTag, SrsCodecVideoAVCFrame.KeyFrame, SrsCodecVideoAVCType.SequenceHeader, 0, 0);
+        muxVideoDataHeader(flvTag, SrsCodecVideoAVCFrame.KeyFrame, SrsCodecVideoAVCType.SequenceHeader, 0);
 
         // h.264 raw data.
         muxAVCDecorderConfigurationRecord(flvTag, sps, pps);
@@ -290,9 +294,9 @@ public class SrsFlvMuxerHandler extends ChannelOutboundHandlerAdapter {
     }
 
     //.addComponent(true, allocator.directBuffer(4).writeInt(20 + data.readableBytes()))
-    private BinaryWebSocketFrame buildTagFrame(ByteBufAllocator allocator, int codecVideoAVCFrame, int dts, ByteBuf data) {
+    private BinaryWebSocketFrame buildTagFrame(ByteBufAllocator allocator, int codecVideoAVCFrame, int dts, ByteBuf data, int cts) {
         return new BinaryWebSocketFrame(allocator.compositeBuffer(2)
-                .addComponent(true, muxNalusFlvHeader(allocator, codecVideoAVCFrame, dts, data.readableBytes()))
+                .addComponent(true, muxNalusFlvHeader(allocator, codecVideoAVCFrame, dts, data.readableBytes(), cts))
                 .addComponent(true, data)
         );
     }
@@ -306,11 +310,17 @@ public class SrsFlvMuxerHandler extends ChannelOutboundHandlerAdapter {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (!acceptInboundMessage(msg)) {
-            ctx.fireChannelRead(msg);
+            ctx.write(msg);
             return;
         }
+
+
         PacketWrapper packetWrapper = (PacketWrapper) msg;
-        DataPacket videoPacket = packetWrapper.getPacket();
+        if (packetWrapper.getPacket() instanceof AudioPacket) {
+            ctx.write(new BinaryWebSocketFrame(packetWrapper.getBody()), ctx.voidPromise());
+            return;
+        }
+        VideoPacket videoPacket = (VideoPacket) packetWrapper.getPacket();
         ByteBuf data = packetWrapper.getBody();
         int index = data.readerIndex();
         index = searchAnnexbFrame(data, index);
@@ -329,22 +339,27 @@ public class SrsFlvMuxerHandler extends ChannelOutboundHandlerAdapter {
                 int ppsIndex = index;
                 index = searchAnnexbFrame(data, index);
                 int ppsLength = index - ppsIndex - naluSeparatorSize;
-                if (PublishManager.INSTANCE.hasInitSequenceHeader(videoPacket.getStreamId())) {
-                    ByteBuf SequenceHeader = muxSequenceHeaderFlvTag(ctx.alloc(), data.slice(spsIndex, spsLength), data.slice(ppsIndex, ppsLength));
-                    PublishManager.INSTANCE.storeSequenceHeader(videoPacket.getStreamId(), SequenceHeader.duplicate().retain());
-                    ctx.write(new BinaryWebSocketFrame(SequenceHeader), ctx.voidPromise());
+                if (!PublishManager.INSTANCE.hasInitSequenceHeader(videoPacket.getStreamId())) {
+                    ByteBuf sequenceHeader = muxSequenceHeaderFlvTag(ctx.alloc(), data.slice(spsIndex, spsLength), data.slice(ppsIndex, ppsLength));
+                    sequenceHeader.retain();
+                    ctx.write(new BinaryWebSocketFrame(sequenceHeader)).addListener(f -> {
+                        if (f.isSuccess()) {
+                            PublishManager.INSTANCE.storeSequenceHeader(videoPacket.getStreamId(),sequenceHeader);
+                        } else {
+                            ReferenceCountUtil.safeRelease(sequenceHeader);
+                        }
+                    });
                 }
                 if ((data.getByte(index) & 0x1f) == SrsAvcNaluType.SEI) {
                     index = searchAnnexbFrame(data, index);
                 }
                 ByteBuf frame = data.slice(index, data.readableBytes() - index);
-                ctx.writeAndFlush(buildTagFrame(ctx.alloc(), SrsCodecVideoAVCFrame.KeyFrame, offsetTimestamp, frame), ctx.voidPromise());
+                ctx.writeAndFlush(buildTagFrame(ctx.alloc(), SrsCodecVideoAVCFrame.KeyFrame, offsetTimestamp, frame, videoPacket.getLFI()), ctx.voidPromise());
             } else if (type == SrsAvcNaluType.NonIDR) {
                 ByteBuf frame = data.slice(index, data.readableBytes() - index);
-                ctx.writeAndFlush(buildTagFrame(ctx.alloc(), SrsCodecVideoAVCFrame.InterFrame, offsetTimestamp, frame), ctx.voidPromise());
+                ctx.writeAndFlush(buildTagFrame(ctx.alloc(), SrsCodecVideoAVCFrame.InterFrame, offsetTimestamp, frame, videoPacket.getLFI()), ctx.voidPromise());
             } else {
                 System.out.println(ByteBufUtil.hexDump(data, 0, data.readableBytes()));
-
 
                 ReferenceCountUtil.safeRelease(data);
             }
@@ -352,5 +367,11 @@ public class SrsFlvMuxerHandler extends ChannelOutboundHandlerAdapter {
             System.out.println("no annexb frame");
             ReferenceCountUtil.safeRelease(data);
         }
+    }
+
+    @Override
+    public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        ctx.close(promise);
+        PublishManager.INSTANCE.releaseSingleChannel(streamId);
     }
 }
