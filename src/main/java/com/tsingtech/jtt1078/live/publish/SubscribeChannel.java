@@ -4,11 +4,14 @@ import com.tsingtech.jtt1078.live.subscriber.Subscriber;
 import com.tsingtech.jtt1078.vo.DataPacket;
 import com.tsingtech.jtt1078.vo.PacketWrapper;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.EventLoop;
 import io.netty.util.ReferenceCountUtil;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Author: chrisliu
@@ -19,15 +22,31 @@ public class SubscribeChannel {
 
     private final String channel;
 
+    public EventLoop getEventLoop() {
+        return eventLoop;
+    }
+
+    public void setEventLoop(EventLoop eventLoop) {
+        this.eventLoop = eventLoop;
+    }
+
+    private EventLoop eventLoop;
+
     private final CopyOnWriteArrayList<Subscriber> subscribers = new CopyOnWriteArrayList<>();
 
     private LocalDateTime time = LocalDateTime.now();
 
     public void setSequenceHeader(ByteBuf sequenceHeader) {
-        this.sequenceHeader = sequenceHeader;
+        if (sequenceHeaderStatus.compareAndSet(0, 1)) {
+            this.sequenceHeader = sequenceHeader;
+        } else {
+            ReferenceCountUtil.safeRelease(sequenceHeader);
+        }
     }
 
-    private ByteBuf sequenceHeader;
+    private ByteBuf sequenceHeader = null;
+
+    AtomicInteger sequenceHeaderStatus = new AtomicInteger(0);
 
     private AtomicBoolean isDestory = new AtomicBoolean(false);
 
@@ -38,14 +57,15 @@ public class SubscribeChannel {
     public SubscribeChannel subscribe (Subscriber subscriber) {
         time = LocalDateTime.now();
         if (sequenceHeader != null) {
-            subscriber.getChannel().writeAndFlush(sequenceHeader, subscriber.getChannel().voidPromise());
+            sequenceHeader.retain();
+            subscriber.getChannel().writeAndFlush(sequenceHeader.slice(), subscriber.getChannel().voidPromise());
         }
         subscribers.add(subscriber);
         return this;
     }
 
     public boolean hasInitSequenceHeader () {
-        return sequenceHeader == null;
+        return sequenceHeader != null;
     }
 
     public LocalDateTime getTime () {
@@ -75,7 +95,7 @@ public class SubscribeChannel {
     }
 
     public void destorySubscribes () {
-        subscribers.forEach(subscriber -> subscriber.getChannel().close(subscriber.getChannel().voidPromise()));
-        ReferenceCountUtil.safeRelease(sequenceHeader);
+        subscribers.forEach(subscriber -> subscriber.getChannel().close());
+        Optional.ofNullable(sequenceHeader).ifPresent(ReferenceCountUtil::safeRelease);
     }
 }
