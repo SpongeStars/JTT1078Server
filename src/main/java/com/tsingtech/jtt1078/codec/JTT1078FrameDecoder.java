@@ -7,10 +7,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
 
-import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.List;
 
 /**
@@ -19,7 +16,7 @@ import java.util.List;
  * Mail: gwarmdll@gmail.com
  * 纵有疾风起，人生不言弃
  */
-public class JT1078FrameDecoder extends ReplayingDecoder<JT1078FrameDecoder.DecoderState> {
+public class JTT1078FrameDecoder extends ReplayingDecoder<JTT1078FrameDecoder.DecoderState> {
 
     public static final int PacketType_IFrame = 0x00;
     public static final int PacketType_PFrame = 0x01;
@@ -34,7 +31,7 @@ public class JT1078FrameDecoder extends ReplayingDecoder<JT1078FrameDecoder.Deco
 
     private static final int PacketType_LengthFieldOffset = 15;
     private static final int Transparent_LengthFieldEndOffset = 18;
-    private static final int AudioFrame_LengthFieldEndOffset = 24;
+    private static final int AudioFrame_LengthFieldEndOffset = 26;
     private static final int VideoFrame_LengthFieldEndOffset = 30;
 
     private int frameLength;
@@ -48,16 +45,16 @@ public class JT1078FrameDecoder extends ReplayingDecoder<JT1078FrameDecoder.Deco
 
     private DataPacket dataPacket;
 
-    public JT1078FrameDecoder () {
+    public JTT1078FrameDecoder() {
         super(DecoderState.Decode_DeviceInfo);
-        RandomAccessFile raf = null;
-        try {
-            raf = new RandomAccessFile("D:/611912120046_2.txt", "rw");
-            FileChannel channel = raf.getChannel();
-            buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, 30240000);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        RandomAccessFile raf = null;
+//        try {
+//            raf = new RandomAccessFile("D:/611912120046_1_audio.txt", "rw");
+//            FileChannel channel = raf.getChannel();
+//            buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, 30240000);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
     @Override
@@ -68,6 +65,9 @@ public class JT1078FrameDecoder extends ReplayingDecoder<JT1078FrameDecoder.Deco
                 byte packetTypeField = in.getByte(in.readerIndex() + PacketType_LengthFieldOffset);
                 type = (packetTypeField >> 4) & 0x0f;
                 offset = getLengthFieldEndOffset(type);
+                if (dataPacket == null) {
+                    initPacket(type);
+                }
                 dataPacket.setTypeFlag(packetTypeField);
                 if (!hasInit && dataPacket != null) {
                     byte[] simRaw = new byte[6];
@@ -82,11 +82,11 @@ public class JT1078FrameDecoder extends ReplayingDecoder<JT1078FrameDecoder.Deco
                 checkpoint(DecoderState.Decode_FrameInfo);
             case Decode_FrameInfo:
                 frameLength = in.getUnsignedShort(in.readerIndex() + offset - 2);
-                boolean isFirstbpackage = dataPacket.getPacketPlace() == 0 || dataPacket.getPacketPlace() == 1;
-                if (type != PacketType_Transparent && isFirstbpackage) {
+                boolean isFirstSubpackage = dataPacket.getPacketPlace() == 0 || dataPacket.getPacketPlace() == 1;
+                if (type != PacketType_Transparent && isFirstSubpackage) {
                     dataPacket.setTimestamp(in.getLong(in.readerIndex() + TimestampFieldOffset));
                 }
-                if (type < PacketType_AudioFrame && isFirstbpackage) {
+                if (type < PacketType_AudioFrame && isFirstSubpackage) {
                     ((VideoPacket)dataPacket).setLFI(in.getUnsignedShort(in.readerIndex() + LFIFieldOffset));
                 }
                 checkpoint(DecoderState.Decode_Payload);
@@ -95,9 +95,9 @@ public class JT1078FrameDecoder extends ReplayingDecoder<JT1078FrameDecoder.Deco
                     list.add(dataPacket.setBody(in.slice(in.readerIndex() + offset, frameLength).retain()));
                 }
 //                buffer.put(dataPacket.getBody().nioBuffer());
-////                buffer.force();
+//                buffer.force();
                 in.skipBytes(frameLength + offset);
-                dataPacket = null;
+                dataPacket = dataPacket.newInstance();
                 checkpoint(DecoderState.Decode_DeviceInfo);
                 break;
             default:
@@ -107,13 +107,21 @@ public class JT1078FrameDecoder extends ReplayingDecoder<JT1078FrameDecoder.Deco
 
     private int getLengthFieldEndOffset (int type) {
         if (type < PacketType_AudioFrame) {
-            dataPacket = new VideoPacket();
             return VideoFrame_LengthFieldEndOffset;
         } else if (type == PacketType_AudioFrame) {
-            dataPacket = new AudioPacket();
             return AudioFrame_LengthFieldEndOffset;
         } else if (type == PacketType_Transparent) {
             return Transparent_LengthFieldEndOffset;
+        } else {
+            throw new RuntimeException();
+        }
+    }
+
+    private void initPacket (int type) {
+        if (type < PacketType_AudioFrame) {
+            dataPacket = new VideoPacket();
+        } else if (type == PacketType_AudioFrame) {
+            dataPacket = new AudioPacket();
         } else {
             throw new RuntimeException();
         }

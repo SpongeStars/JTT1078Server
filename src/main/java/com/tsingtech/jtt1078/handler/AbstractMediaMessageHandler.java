@@ -1,12 +1,10 @@
 package com.tsingtech.jtt1078.handler;
 
 import com.tsingtech.jtt1078.live.publish.PublishManager;
-import com.tsingtech.jtt1078.vo.AudioPacket;
 import com.tsingtech.jtt1078.vo.DataPacket;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 
 import java.time.LocalDateTime;
@@ -14,28 +12,15 @@ import java.time.LocalDateTime;
 /**
  * @author chrisliu
  * @mail chrisliu.top@gmail.com
- * @since 2020/4/1 13:29
+ * @since 2020/4/7 10:10
  */
-public class MediaMessageHandler extends ChannelDuplexHandler {
-
-    private String streamId;
-    private DataPacket dataPacket;
+public abstract class AbstractMediaMessageHandler<T extends DataPacket> extends SimpleChannelInboundHandler<T> {
+    protected String streamId;
+    private T dataPacket;
     private CompositeByteBuf compositeByteBuf;
 
     @Override
-    public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-        ctx.close(promise);
-        PublishManager.INSTANCE.releaseSingleChannel(streamId);
-        ReferenceCountUtil.safeRelease(compositeByteBuf);
-    }
-
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (msg instanceof AudioPacket) {
-            ctx.fireChannelRead(msg);
-            return;
-        }
-        DataPacket subPacket = (DataPacket) msg;
+    protected void channelRead0(ChannelHandlerContext ctx, T subPacket) throws Exception {
         if (streamId == null) {
             streamId = String.join("/", subPacket.getSim(), String.valueOf(subPacket.getLogicChannel()));
             System.out.println(streamId);
@@ -49,7 +34,7 @@ public class MediaMessageHandler extends ChannelDuplexHandler {
                 if (subPacket.getBody().getByte(0) != 0) {
                     System.out.println("====");
                 }
-                PublishManager.INSTANCE.publish(streamId, subPacket);
+                publish(dataPacket);
                 break;
             case 1:
                 dataPacket = subPacket;
@@ -68,8 +53,9 @@ public class MediaMessageHandler extends ChannelDuplexHandler {
                     System.out.println("====");
                 }
                 System.out.println(LocalDateTime.now());
-                PublishManager.INSTANCE.publish(streamId, dataPacket.setBody(compositeByteBuf
-                        .addComponent(true, subPacket.getBody())));
+                dataPacket.setBody(compositeByteBuf
+                        .addComponent(true, subPacket.getBody()));
+                publish(dataPacket);
                 dataPacket = null;
                 compositeByteBuf = null;
                 break;
@@ -78,7 +64,16 @@ public class MediaMessageHandler extends ChannelDuplexHandler {
                 break;
             default:
                 ReferenceCountUtil.safeRelease(subPacket.getBody());
-                throw new RuntimeException("unknow packet type");
+                System.out.println("unknow packet type");
         }
     }
+
+    public void close() {
+        PublishManager.INSTANCE.releaseSingleChannel(streamId);
+        if (compositeByteBuf != null) {
+            ReferenceCountUtil.safeRelease(compositeByteBuf);
+        }
+    }
+
+    protected abstract void publish(T dataPacket);
 }
