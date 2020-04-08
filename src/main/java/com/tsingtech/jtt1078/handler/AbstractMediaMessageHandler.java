@@ -18,12 +18,15 @@ public abstract class AbstractMediaMessageHandler<T extends DataPacket> extends 
     private T dataPacket;
     private CompositeByteBuf compositeByteBuf;
 
+    protected abstract void init(ChannelHandlerContext ctx);
+
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, T subPacket) throws Exception {
         if (streamId == null) {
             streamId = String.join("/", subPacket.getSim(), String.valueOf(subPacket.getLogicChannel()));
             SubscribeChannel subscribeChannel = PublishManager.INSTANCE.getSubscribeChannel(streamId);
             subscribeChannel.setEventLoop(ctx.channel().eventLoop());
+            init(ctx);
             System.out.println(streamId);
         }
         switch(subPacket.getPacketPlace()) {
@@ -32,9 +35,6 @@ public abstract class AbstractMediaMessageHandler<T extends DataPacket> extends 
                     ReferenceCountUtil.safeRelease(compositeByteBuf);
                 }
                 subPacket.setStreamId(streamId);
-                if (subPacket.getBody().getByte(0) != 0) {
-                    System.out.println("====");
-                }
                 publish(subPacket);
                 break;
             case 1:
