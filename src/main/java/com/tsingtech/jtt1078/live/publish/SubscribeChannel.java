@@ -76,7 +76,12 @@ public class SubscribeChannel {
     }
 
     public void destorySubscribes () {
-        subscribers.forEach(subscriber -> subscriber.getChannel().close());
+        subscribers.forEach(subscriber -> {
+            if (subscriber.getChannel().isOpen()) {
+                subscriber.getChannel().close();
+            }
+        });
+        subscribers.clear();
         Optional.ofNullable(sequenceHeader).ifPresent(ReferenceCountUtil::safeRelease);
     }
 }
