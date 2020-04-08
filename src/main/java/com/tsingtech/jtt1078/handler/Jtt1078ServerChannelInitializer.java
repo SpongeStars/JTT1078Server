@@ -10,6 +10,11 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 
+/**
+ * @author chrisliu
+ * @mail chrisliu.top@gmail.com
+ * @since 2020/4/7 10:19
+ */
 public class Jtt1078ServerChannelInitializer extends ChannelInitializer<NioSocketChannel> {
 
     private static JTT1078ServerProperties JTT1078ServerProperties;
