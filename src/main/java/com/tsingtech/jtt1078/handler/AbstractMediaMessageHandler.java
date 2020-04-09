@@ -4,31 +4,63 @@ import com.tsingtech.jtt1078.live.publish.PublishManager;
 import com.tsingtech.jtt1078.live.publish.SubscribeChannel;
 import com.tsingtech.jtt1078.vo.DataPacket;
 import io.netty.buffer.CompositeByteBuf;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
+import io.netty.util.internal.TypeParameterMatcher;
 
 /**
  * @author chrisliu
  * @mail chrisliu.top@gmail.com
  * @since 2020/4/7 10:10
  */
-public abstract class AbstractMediaMessageHandler<T extends DataPacket> extends SimpleChannelInboundHandler<T> {
+public abstract class AbstractMediaMessageHandler<I extends DataPacket> extends ChannelDuplexHandler {
     protected String streamId;
-    private T dataPacket;
+    protected I dataPacket;
     private CompositeByteBuf compositeByteBuf;
+    protected boolean match = false;
+
+    private final TypeParameterMatcher matcher;
+
+    /**
+     * Create a new instance which will try to detect the types to match out of the type parameter of the class.
+     */
+    protected AbstractMediaMessageHandler() {
+        matcher = TypeParameterMatcher.find(this, AbstractMediaMessageHandler.class, "I");
+    }
+
+    public boolean acceptInboundMessage(Object msg) throws Exception {
+        return matcher.match(msg);
+    }
+
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        if (streamId == null) {
+            if (acceptInboundMessage(msg)) {
+                @SuppressWarnings("unchecked")
+                I imsg = (I) msg;
+                match= true;
+                streamId = String.join("/", imsg.getSim(), String.valueOf(imsg.getLogicChannel()));
+                SubscribeChannel subscribeChannel = PublishManager.INSTANCE.getSubscribeChannel(streamId);
+                subscribeChannel.setEventLoop(ctx.channel().eventLoop());
+                init(ctx);
+                System.out.println(streamId);
+                channelRead0(ctx, imsg);
+            } else {
+                ctx.fireChannelRead(msg);
+            }
+        } else {
+            @SuppressWarnings("unchecked")
+            I imsg = (I) msg;
+            channelRead0(ctx, imsg);
+        }
+
+    }
 
     protected abstract void init(ChannelHandlerContext ctx);
 
-    @Override
-    protected void channelRead0(ChannelHandlerContext ctx, T subPacket) throws Exception {
-        if (streamId == null) {
-            streamId = String.join("/", subPacket.getSim(), String.valueOf(subPacket.getLogicChannel()));
-            SubscribeChannel subscribeChannel = PublishManager.INSTANCE.getSubscribeChannel(streamId);
-            subscribeChannel.setEventLoop(ctx.channel().eventLoop());
-            init(ctx);
-            System.out.println(streamId);
-        }
+    protected void channelRead0(ChannelHandlerContext ctx, I subPacket) throws Exception {
         switch(subPacket.getPacketPlace()) {
             case 0:
                 if (compositeByteBuf != null) {
@@ -68,12 +100,28 @@ public abstract class AbstractMediaMessageHandler<T extends DataPacket> extends 
         }
     }
 
-    public void close() {
-        PublishManager.INSTANCE.releaseSingleChannel(streamId);
-        if (compositeByteBuf != null) {
-            ReferenceCountUtil.safeRelease(compositeByteBuf);
+    @Override
+    public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        ctx.close(promise);
+        if (match) {
+            PublishManager.INSTANCE.releaseSingleChannel(streamId);
+            if (compositeByteBuf != null) {
+                ReferenceCountUtil.safeRelease(compositeByteBuf);
+            }
         }
     }
 
-    protected abstract void publish(T dataPacket);
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
+            throws Exception {
+        ctx.fireExceptionCaught(cause);
+        if (match) {
+            PublishManager.INSTANCE.releaseSingleChannel(streamId);
+            if (compositeByteBuf != null) {
+                ReferenceCountUtil.safeRelease(compositeByteBuf);
+            }
+        }
+    }
+
+    protected abstract void publish(I dataPacket);
 }
