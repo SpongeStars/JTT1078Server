@@ -354,6 +354,9 @@ public class SrsFlvMuxerHandler extends ChannelOutboundHandlerAdapter {
                     index = searchAnnexbFrame(data, index);
                 }
                 ByteBuf frame = data.slice(index, data.readableBytes() - index);
+                if (frame.readableBytes() > 113000) {
+                    System.out.println("exceed max frame?");
+                }
                 ctx.writeAndFlush(buildTagFrame(ctx.alloc(), SrsCodecVideoAVCFrame.KeyFrame, offsetTimestamp, frame, videoPacket.getLFI()), ctx.voidPromise());
             } else if (type == SrsAvcNaluType.NonIDR) {
                 ByteBuf frame = data.slice(index, data.readableBytes() - index);

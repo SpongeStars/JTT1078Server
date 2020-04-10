@@ -4,6 +4,7 @@ import com.tsingtech.jtt1078.live.subscriber.Subscriber;
 import com.tsingtech.jtt1078.vo.DataPacket;
 import com.tsingtech.jtt1078.vo.PacketWrapper;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.EventLoop;
 import io.netty.util.ReferenceCountUtil;
 
@@ -19,6 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class SubscribeChannel {
 
     private final String channel;
+
+    private Channel producer;
 
     public EventLoop getEventLoop() {
         return eventLoop;
@@ -83,5 +86,18 @@ public class SubscribeChannel {
         });
         subscribers.clear();
         Optional.ofNullable(sequenceHeader).ifPresent(ReferenceCountUtil::safeRelease);
+    }
+
+    public void registerProducer(Channel channel) {
+        this.producer = channel;
+        this.eventLoop = channel.eventLoop();
+    }
+
+    public void p(ByteBuf byteBuf) {
+        if (this.producer != null) {
+            this.producer.writeAndFlush(byteBuf);
+        } else {
+            ReferenceCountUtil.safeRelease(byteBuf);
+        }
     }
 }

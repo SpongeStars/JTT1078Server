@@ -1,6 +1,6 @@
 package com.tsingtech.jtt1078.live.handler;
 
-import com.tsingtech.jtt1078.config.JT1078ServerProperties;
+import com.tsingtech.jtt1078.config.JTT1078ServerProperties;
 import com.tsingtech.jtt1078.handler.Jtt1078ServerChannelInitializer;
 import com.tsingtech.jtt1078.live.publish.PublishManager;
 import com.tsingtech.jtt1078.live.subscriber.AudioSubscriber;
@@ -36,7 +36,7 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private static String app;
     static {
-        app = BeanUtil.getBean(JT1078ServerProperties.class).getApp();
+        app = BeanUtil.getBean(JTT1078ServerProperties.class).getApp();
     }
 
     @Override
@@ -116,7 +116,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                     handshaker.close(channel, new CloseWebSocketFrame());
                 }
             });
-            pipeline.addLast(new WebSocketServerHandler()).addLast(new SrsFlvMuxerHandler())
+            pipeline.addLast(new WebSocketServerHandler(streamId)).addLast(new SrsFlvMuxerHandler(streamId))
                     .addLast(Jtt1078ServerChannelInitializer.exceptionHandler);
         }
 

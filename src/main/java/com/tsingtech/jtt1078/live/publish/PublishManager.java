@@ -2,9 +2,10 @@ package com.tsingtech.jtt1078.live.publish;
 
 import com.tsingtech.jtt1078.live.subscriber.Subscriber;
 import com.tsingtech.jtt1078.vo.AudioPacket;
-import com.tsingtech.jtt1078.vo.DataPacket;
 import com.tsingtech.jtt1078.vo.VideoPacket;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
+import io.netty.channel.EventLoop;
 import io.netty.util.ReferenceCountUtil;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,7 +46,7 @@ public enum PublishManager {
     }
 
     public void releaseSingleChannel(String streamId) {
-        channels.remove(streamId).destorySubscribes();
+        channels.get(streamId).destorySubscribes();
     }
 
     public void unSubscribe (Subscriber subscriber) {
@@ -81,6 +82,18 @@ public enum PublishManager {
             return subscribeChannel.hasInitSequenceHeader();
         }
         return false;
+    }
+
+    public void registerProducer(String streamId, Channel channel) {
+        getSubscribeChannel(streamId).registerProducer(channel);
+    }
+
+    public void registerEventLoop(String streamId, EventLoop eventLoop) {
+        getSubscribeChannel(streamId).setEventLoop(eventLoop);
+    }
+
+    public void publish(String streamId, ByteBuf dataPacket) {
+        channels.get(streamId).p(dataPacket);
     }
 
 }
