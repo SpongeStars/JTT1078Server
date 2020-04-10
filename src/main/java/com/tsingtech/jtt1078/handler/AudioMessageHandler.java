@@ -18,6 +18,7 @@ public class AudioMessageHandler extends AbstractMediaMessageHandler<AudioPacket
     private byte logicChannel;
     private byte typeFlag;
     private int sequenceNum = 0;
+
     private static byte[] separators = new byte[]{0x30, 0x31, 0x63, 0x64, (byte) 0x81};
 
     @Override
@@ -39,7 +40,7 @@ public class AudioMessageHandler extends AbstractMediaMessageHandler<AudioPacket
         if (match) {
             ByteBuf data = (ByteBuf) msg;
             ctx.write(ctx.alloc().directBuffer(26).writeBytes(separators).writeByte(PT).writeShort(sequenceNum)
-            .writeBytes(simRaw).writeByte(logicChannel).writeByte(typeFlag).writeLong(System.currentTimeMillis())
+            .writeBytes(simRaw).writeByte(logicChannel).writeByte(typeFlag).writeLong((long) (sequenceNum * 0.064))
             .writeShort(data.readableBytes()));
             ctx.writeAndFlush(data);
             sequenceNum++;

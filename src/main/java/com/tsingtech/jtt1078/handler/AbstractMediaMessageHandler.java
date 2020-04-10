@@ -40,6 +40,7 @@ public abstract class AbstractMediaMessageHandler<I extends DataPacket> extends 
             if (acceptInboundMessage(msg)) {
                 @SuppressWarnings("unchecked")
                 I imsg = (I) msg;
+                dataPacket = imsg;
                 match= true;
                 streamId = String.join("/", imsg.getSim(), String.valueOf(imsg.getLogicChannel()));
                 SubscribeChannel subscribeChannel = PublishManager.INSTANCE.getSubscribeChannel(streamId);

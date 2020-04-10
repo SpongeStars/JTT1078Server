@@ -20,12 +20,9 @@ public class ExceptionHandler extends ChannelDuplexHandler {
 
     @Override
     public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) {
-        ctx.connect(remoteAddress, localAddress, promise.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) {
-                if (!future.isSuccess()) {
-                    // Handle connect exception here...
-                }
+        ctx.connect(remoteAddress, localAddress, promise.addListener((ChannelFutureListener) future -> {
+            if (!future.isSuccess()) {
+                // Handle connect exception here...
             }
         }));
     }
