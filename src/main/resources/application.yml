@@ -1,5 +1,7 @@
-spring.main.web-application-type: none
-
+spring:
+  main.web-application-type: none
+  application:
+    name: service-1078
 
 tsing-jtt1078:
   server:
@@ -7,3 +9,8 @@ tsing-jtt1078:
     host: 0.0.0.0
     app: /tsinglive/
     livePort: 1079
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://127.0.0.1:8761/eureka/
