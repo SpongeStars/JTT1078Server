@@ -1,6 +1,6 @@
-<p align="center"><a href="https://github.com/SuperChrisliu" target="_blank" rel="noopener noreferrer"><img src="https://raw.githubusercontent.com/SuperChrisliu/JTT1078Server/master/1078logo.png" alt="1078 logo"></a></p>
+<p align="center"><a href="https://github.com/SuperChrisliu" target="_blank" rel="noopener noreferrer"><img width="700" src="https://raw.githubusercontent.com/SuperChrisliu/JTT1078Server/master/1078logo.png" alt="1078 logo"></a></p>
 
-# JTT1078Server
+# Tsing JT/T 1078 Server
 
 ### 简介
 JT/T 1078实时视频协议的实现。
@@ -26,4 +26,4 @@ QQ群：808432702，加入我们，群里有热心的同道中人、相关资料
 ### License
 [MIT](http://opensource.org/licenses/MIT)
 
-Copyright (c) 2020-present, Tsing Chris liu
+Copyright (c) 2020-present, Chris liu
