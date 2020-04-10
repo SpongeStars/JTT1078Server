@@ -1,4 +1,4 @@
-<p align="center"><a href="https://vuejs.org" target="_blank" rel="noopener noreferrer"><img width="100" src="https://raw.githubusercontent.com/SuperChrisliu/JTT1078Server/master/1078logo.png" alt="Vue logo"></a></p>
+<p align="center"><a href="https://github.com/SuperChrisliu" target="_blank" rel="noopener noreferrer"><img src="https://raw.githubusercontent.com/SuperChrisliu/JTT1078Server/master/1078logo.png" alt="1078 logo"></a></p>
 
 # JTT1078Server
 
