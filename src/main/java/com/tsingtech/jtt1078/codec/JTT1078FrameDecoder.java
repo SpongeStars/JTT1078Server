@@ -7,7 +7,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
 
-import java.nio.MappedByteBuffer;
 import java.util.List;
 
 /**
@@ -24,6 +23,7 @@ public class JTT1078FrameDecoder extends ReplayingDecoder<JTT1078FrameDecoder.De
     public static final int PacketType_AudioFrame = 0x03;
     public static final int PacketType_Transparent = 0x04;
 
+    private static final int PTOffset = 5;
     private static final int SimFieldOffset = 8;
     private static final int ChannelFieldOffset = 14;
     private static final int TimestampFieldOffset = 16;
@@ -40,21 +40,10 @@ public class JTT1078FrameDecoder extends ReplayingDecoder<JTT1078FrameDecoder.De
     private int offset;
     private int type = -1;
 
-
-    MappedByteBuffer buffer;
-
     private DataPacket dataPacket;
 
     public JTT1078FrameDecoder() {
         super(DecoderState.Decode_DeviceInfo);
-//        RandomAccessFile raf = null;
-//        try {
-//            raf = new RandomAccessFile("D:/611912120046_1_audio.txt", "rw");
-//            FileChannel channel = raf.getChannel();
-//            buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, 30240000);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
     }
 
     @Override
@@ -70,14 +59,12 @@ public class JTT1078FrameDecoder extends ReplayingDecoder<JTT1078FrameDecoder.De
                 }
                 dataPacket.setTypeFlag(packetTypeField);
                 if (!hasInit && dataPacket != null) {
+                    dataPacket.setPT(in.getByte(in.readerIndex() + PTOffset));
                     byte[] simRaw = new byte[6];
                     in.getBytes(in.readerIndex() + SimFieldOffset, simRaw);
-                    in.getByte(in.readerIndex() + ChannelFieldOffset);
                     dataPacket.setSimRaw(simRaw);
                     dataPacket.setLogicChannel(in.getByte(in.readerIndex() + ChannelFieldOffset));
                     hasInit = true;
-//                    AttributeKey<String> sessionIdKey = AttributeKey.valueOf("streamId");
-//                    channelHandlerContext.channel().attr(sessionIdKey).set(String.join("_", dataPacket.getSim(), String.valueOf(dataPacket.getLogicChannel())));
                 }
                 checkpoint(DecoderState.Decode_FrameInfo);
             case Decode_FrameInfo:
@@ -94,8 +81,6 @@ public class JTT1078FrameDecoder extends ReplayingDecoder<JTT1078FrameDecoder.De
                 if (dataPacket != null) {
                     list.add(dataPacket.setBody(in.slice(in.readerIndex() + offset, frameLength).retain()));
                 }
-//                buffer.put(dataPacket.getBody().nioBuffer());
-//                buffer.force();
                 in.skipBytes(frameLength + offset);
                 dataPacket = dataPacket.newInstance();
                 checkpoint(DecoderState.Decode_DeviceInfo);
