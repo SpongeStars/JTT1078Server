@@ -8,6 +8,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.EventLoop;
 import io.netty.util.ReferenceCountUtil;
 
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -39,14 +40,19 @@ public enum PublishManager {
         getSubscribeChannel(subscriber.getStreamId()).subscribe(subscriber);
     }
 
-    private void releaseSubscribeChannel(String streamId, SubscribeChannel subscribeChannel) {
-        if (channels.remove(streamId, subscribeChannel)) {
-            subscribeChannel.destorySubscribes();
-        }
-    }
+//    private void releaseSubscribeChannel(String streamId, SubscribeChannel subscribeChannel) {
+//        if (channels.remove(streamId, subscribeChannel)) {
+//            subscribeChannel.destroySubscribes();
+//        }
+//    }
 
     public void releaseSingleChannel(String streamId) {
-        channels.get(streamId).destorySubscribes();
+        channels.get(streamId).destroySubscribes();
+    }
+
+
+    public void destroySingleSubscribeChannel(String streamId) {
+        Optional.ofNullable(channels.remove(streamId)).ifPresent(SubscribeChannel::destroySubscribes);
     }
 
     public void unSubscribe (Subscriber subscriber) {

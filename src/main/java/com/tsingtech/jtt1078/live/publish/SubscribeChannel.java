@@ -78,7 +78,7 @@ public class SubscribeChannel {
         });
     }
 
-    public void destorySubscribes () {
+    public void destroySubscribes () {
         subscribers.forEach(subscriber -> {
             if (subscriber.getChannel().isOpen()) {
                 subscriber.getChannel().close();

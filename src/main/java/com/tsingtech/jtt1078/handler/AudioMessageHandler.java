@@ -19,7 +19,7 @@ public class AudioMessageHandler extends AbstractMediaMessageHandler<AudioPacket
     private byte typeFlag;
     private int sequenceNum = 0;
 
-    private static byte[] separators = new byte[]{0x30, 0x31, 0x63, 0x64, (byte) 0x81};
+    private static final byte[] separators = new byte[]{0x30, 0x31, 0x63, 0x64, (byte) 0x81};
 
     @Override
     protected void publish(AudioPacket dataPacket) {

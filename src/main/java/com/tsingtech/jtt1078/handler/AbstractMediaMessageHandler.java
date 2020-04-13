@@ -103,13 +103,14 @@ public abstract class AbstractMediaMessageHandler<I extends DataPacket> extends 
 
     @Override
     public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-        ctx.close(promise);
         if (match) {
-            PublishManager.INSTANCE.releaseSingleChannel(streamId);
+            PublishManager.INSTANCE.destroySingleSubscribeChannel(streamId);
             if (compositeByteBuf != null) {
                 ReferenceCountUtil.safeRelease(compositeByteBuf);
             }
         }
+
+        ctx.close(promise);
     }
 
     @Override
