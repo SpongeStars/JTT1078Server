@@ -1,6 +1,6 @@
-<p align="center"><a href="https://github.com/SuperChrisliu" target="_blank" rel="noopener noreferrer"><img width="500" src="https://raw.githubusercontent.com/SuperChrisliu/JTT1078Server/master/1078logo.png" alt="1078 logo"></a></p>
+<p align="center"><a href="https://github.com/SuperChrisliu" target="_blank" rel="noopener noreferrer"><img width="500" src="http://cdn.chrisliu.top/1078logo.png" alt="1078 logo"></a></p>
 
-# Tsing JT/T 1078 Server
+# Tsing JT/T 1078 Tube
 
 ### 简介
 JT/T 1078实时视频协议的实现。
