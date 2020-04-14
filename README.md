@@ -9,7 +9,7 @@ JT/T 1078实时视频协议的实现。
 * 视频/音频流零拷贝
 * websocket推流
 * FLV编码H.264流
-* 监听、对讲
+* 监听、对讲（服务端不做音频解码编码，只做转发，编码解码由前端完成）
 * 支持注册到EurekaServer
 
 ### Quick Start
@@ -28,7 +28,9 @@ tsing-jtt1078:
     livePort: 1079 # websocket服务使用的端口
 ```
 启动服务，使用websocket客户端连接`ws://127.0.0.1:1079/tsinglive/设备号/通道号?type=1`
-参数`type=1`表示实时视频，`type=2`表示音频
+参数`type=1`表示实时视频，`type=2`表示音频.
+
+`wss`建议配合springcloud gateway实现.
 
 
 ### Contribution
