@@ -1,18 +1,24 @@
 package com.tsingtech.jtt1078.handler;
 
 import com.tsingtech.jtt1078.live.publish.PublishManager;
+import com.tsingtech.jtt1078.live.subscriber.VideoSubscriber;
 import com.tsingtech.jtt1078.vo.VideoPacket;
 import io.netty.channel.ChannelHandlerContext;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author chrisliu
  * @mail chrisliu.top@gmail.com
  * @since 2020/4/1 13:29
  */
+@Slf4j
 public class VideoMessageHandler extends AbstractMediaMessageHandler<VideoPacket> {
     @Override
     protected void init(ChannelHandlerContext ctx) {
-        PublishManager.INSTANCE.registerEventLoop(streamId, ctx.channel().eventLoop());
+        if (log.isDebugEnabled()) {
+            log.debug("A new device channel init and start to publish video, streamId = {}.", streamId);
+        }
+        PublishManager.INSTANCE.initSubscribeChannel(VideoSubscriber.class, streamId, ctx.channel().eventLoop());
     }
 
     @Override

@@ -1,16 +1,19 @@
 package com.tsingtech.jtt1078.handler;
 
 import com.tsingtech.jtt1078.live.publish.PublishManager;
+import com.tsingtech.jtt1078.live.subscriber.AudioSubscriber;
 import com.tsingtech.jtt1078.vo.AudioPacket;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author chrisliu
  * @mail chrisliu.top@gmail.com
  * @since 2020/4/7 10:19
  */
+@Slf4j
 public class AudioMessageHandler extends AbstractMediaMessageHandler<AudioPacket> {
 
     private byte[] simRaw;
@@ -32,7 +35,12 @@ public class AudioMessageHandler extends AbstractMediaMessageHandler<AudioPacket
         PT = dataPacket.getPT();
         logicChannel= dataPacket.getLogicChannel();
         typeFlag = dataPacket.getTypeFlag();
-        PublishManager.INSTANCE.registerProducer(streamId, ctx.channel());
+        if (log.isDebugEnabled()) {
+            log.debug("A new device channel init and start to publish audio, streamId = {}, PT = {}",
+                    streamId, PT & 0x7f);
+        }
+
+        PublishManager.INSTANCE.initSubscribeChannel(AudioSubscriber.class, streamId, ctx.channel());
     }
 
     @Override
