@@ -104,8 +104,12 @@ public enum PublishManager {
         subscribeChannel.setEventLoop(eventLoop);
     }
 
-    public void publish(String streamId, ByteBuf dataPacket) {
+    public void publish2Device(String streamId, ByteBuf dataPacket) {
         channels.get(streamId).publish2Device(dataPacket);
+    }
+
+    public double getDuration(String streamId) {
+       return channels.get(streamId).getDuration();
     }
 
 }

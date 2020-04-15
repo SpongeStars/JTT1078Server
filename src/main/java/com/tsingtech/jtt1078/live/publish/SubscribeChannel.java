@@ -1,5 +1,6 @@
 package com.tsingtech.jtt1078.live.publish;
 
+import com.tsingtech.jtt1078.live.subscriber.AudioSubscriber;
 import com.tsingtech.jtt1078.live.subscriber.Subscriber;
 import com.tsingtech.jtt1078.live.subscriber.VideoSubscriber;
 import com.tsingtech.jtt1078.vo.DataPacket;
@@ -24,6 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class SubscribeChannel {
 
     private final String channel;
+
+    private double duration;
 
     public void setChannelType(Class<? extends Subscriber> channelType) {
         this.channelType = channelType;
@@ -78,6 +81,8 @@ public class SubscribeChannel {
             if (sequenceHeader != null) {
                 subscriber.getChannel().writeAndFlush(sequenceHeader.retainedDuplicate(), subscriber.getChannel().voidPromise());
             }
+        } else {
+            duration = ((AudioSubscriber)subscriber).getDuration();
         }
         if (log.isDebugEnabled()) {
             log.debug("SubscribeChannel receive subscriber, type = {}, streamId = {}.",
@@ -125,5 +130,9 @@ public class SubscribeChannel {
         } else {
             ReferenceCountUtil.safeRelease(byteBuf);
         }
+    }
+
+    public double getDuration () {
+        return duration;
     }
 }

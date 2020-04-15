@@ -1,11 +1,11 @@
 package com.tsingtech.jtt1078.handler;
 
 import com.tsingtech.jtt1078.live.publish.PublishManager;
-import com.tsingtech.jtt1078.live.subscriber.AudioSubscriber;
 import com.tsingtech.jtt1078.vo.AudioPacket;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -21,6 +21,8 @@ public class AudioMessageHandler extends AbstractMediaMessageHandler<AudioPacket
     private byte logicChannel;
     private byte typeFlag;
     private int sequenceNum = 0;
+
+    private double duration = 0;
 
     private static final byte[] separators = new byte[]{0x30, 0x31, 0x63, 0x64, (byte) 0x81};
 
@@ -46,9 +48,12 @@ public class AudioMessageHandler extends AbstractMediaMessageHandler<AudioPacket
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (match) {
+            if (duration <= 0) {
+                duration = PublishManager.INSTANCE.getDuration(streamId);
+            }
             ByteBuf data = (ByteBuf) msg;
             ctx.write(ctx.alloc().directBuffer(26).writeBytes(separators).writeByte(PT).writeShort(sequenceNum)
-            .writeBytes(simRaw).writeByte(logicChannel).writeByte(typeFlag).writeLong((long) (sequenceNum * 0.064))
+            .writeBytes(simRaw).writeByte(logicChannel).writeByte(typeFlag).writeLong((long) (sequenceNum * duration))
             .writeShort(data.readableBytes()));
             ctx.writeAndFlush(data);
             sequenceNum++;
