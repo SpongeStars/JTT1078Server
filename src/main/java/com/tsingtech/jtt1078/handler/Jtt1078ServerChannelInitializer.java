@@ -9,6 +9,9 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.timeout.IdleStateHandler;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author chrisliu
@@ -28,11 +31,13 @@ public class Jtt1078ServerChannelInitializer extends ChannelInitializer<NioSocke
     @Override
     protected void initChannel(NioSocketChannel ch) {
         if (ch.localAddress().getPort() == JTT1078ServerProperties.getLivePort()) {
-            ch.pipeline().addLast(new HttpServerCodec())
+            ch.pipeline().addLast(new IdleStateHandler(0, 60, 0, TimeUnit.SECONDS))
+                    .addLast(new HttpServerCodec())
                     .addLast(new HttpObjectAggregator(65536))
                     .addLast(INSTANCE);
         } else if (ch.localAddress().getPort() == JTT1078ServerProperties.getPort()){
-            ch.pipeline().addLast(new JTT1078FrameDecoder()).addLast(new VideoMessageHandler())
+            ch.pipeline().addLast(new IdleStateHandler(5, 0, 0, TimeUnit.SECONDS))
+                    .addLast(new JTT1078FrameDecoder()).addLast(new VideoMessageHandler())
                     .addLast(new AudioMessageHandler()).addLast(exceptionHandler);
         }
     }
