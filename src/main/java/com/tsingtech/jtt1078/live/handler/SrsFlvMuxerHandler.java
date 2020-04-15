@@ -1,6 +1,7 @@
 package com.tsingtech.jtt1078.live.handler;
 
 import com.tsingtech.jtt1078.live.publish.PublishManager;
+import com.tsingtech.jtt1078.live.subscriber.AbstractSubscriber;
 import com.tsingtech.jtt1078.vo.AudioPacket;
 import com.tsingtech.jtt1078.vo.PacketWrapper;
 import com.tsingtech.jtt1078.vo.VideoPacket;
@@ -11,6 +12,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
+import io.netty.util.AttributeKey;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
 
@@ -221,7 +223,7 @@ public class SrsFlvMuxerHandler extends ChannelOutboundHandlerAdapter {
         muxAVCDecorderConfigurationRecord(flvTag, sps, pps);
 //        System.out.println(String.format("flv: h264 sps/pps sent, sps=%dB, pps=%dB",
 //                sps.capacity(), pps.capacity()));
-//        flvTag.writeInt(11 + dataSize);
+        flvTag.writeInt(11 + dataSize);
         return flvTag;
     }
 
@@ -293,11 +295,11 @@ public class SrsFlvMuxerHandler extends ChannelOutboundHandlerAdapter {
         sequenceHeader.writeBytes(pps);
     }
 
-    //.addComponent(true, allocator.directBuffer(4).writeInt(20 + data.readableBytes()))
     private BinaryWebSocketFrame buildTagFrame(ByteBufAllocator allocator, int codecVideoAVCFrame, int dts, ByteBuf data, int cts) {
-        return new BinaryWebSocketFrame(allocator.compositeBuffer(2)
+        return new BinaryWebSocketFrame(allocator.compositeBuffer(3)
                 .addComponent(true, muxNalusFlvHeader(allocator, codecVideoAVCFrame, dts, data.readableBytes(), cts))
                 .addComponent(true, data)
+                .addComponent(true, allocator.directBuffer(4).writeInt(20 + data.readableBytes()))
         );
     }
 
@@ -375,6 +377,7 @@ public class SrsFlvMuxerHandler extends ChannelOutboundHandlerAdapter {
     @Override
     public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
         ctx.close(promise);
-        PublishManager.INSTANCE.releaseSingleChannel(streamId);
+        AttributeKey<AbstractSubscriber> subscriberKey = AttributeKey.valueOf("subscriber");
+        PublishManager.INSTANCE.unSubscribe(ctx.channel().attr(subscriberKey).get());
     }
 }
