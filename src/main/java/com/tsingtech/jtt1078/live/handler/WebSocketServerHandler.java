@@ -22,7 +22,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<WebSocke
 
     public WebSocketServerHandler(String streamId) {
         this.streamId = streamId;
-                RandomAccessFile raf = null;
+        RandomAccessFile raf = null;
         try {
             raf = new RandomAccessFile("D:/611912120046_origin_2_audio", "rw");
             FileChannel channel = raf.getChannel();
@@ -57,9 +57,9 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<WebSocke
             return;
         }
         if (frame instanceof BinaryWebSocketFrame) {
-                            buffer.put(frame.content().nioBuffer());
-                buffer.force();
-            PublishManager.INSTANCE.publish(streamId, frame.content().retain());
+            buffer.put(frame.content().nioBuffer());
+            buffer.force();
+            PublishManager.INSTANCE.publish2Device(streamId, frame.content().retain());
         }
     }
 

@@ -69,12 +69,15 @@ public class SubscribeChannel {
     }
 
     public void subscribe (Subscriber subscriber) {
-        if (!channelType.isInstance(subscriber)) {
-            log.warn("SubscribeChannel received not match subscriber, type = {}, streamId = {}, now close the subscriber.",
-                    channelType.getName(), subscriber.getStreamId());
-            subscriber.getChannel().close();
-            return ;
+        if (channelType != null) {
+            if (!channelType.isInstance(subscriber)) {
+                log.warn("SubscribeChannel received not match subscriber, type = {}, streamId = {}, now close the subscriber.",
+                        channelType.getName(), subscriber.getStreamId());
+                subscriber.getChannel().close();
+                return ;
+            }
         }
+
 
         if (subscriber instanceof VideoSubscriber) {
             subscriber.getChannel().writeAndFlush(flvHeader.retainedDuplicate());
@@ -86,7 +89,8 @@ public class SubscribeChannel {
         }
         if (log.isDebugEnabled()) {
             log.debug("SubscribeChannel receive subscriber, type = {}, streamId = {}.",
-                    channelType.getName(), subscriber.getStreamId());
+                    channelType != null ? channelType.getName() : subscriber.getClass().getSimpleName(),
+                    subscriber.getStreamId());
         }
         subscribers.add(subscriber);
     }
