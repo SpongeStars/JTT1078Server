@@ -1,6 +1,8 @@
 package com.tsingtech.jtt1078.live.publish;
 
+import com.tsingtech.jtt1078.live.subscriber.AudioSubscriber;
 import com.tsingtech.jtt1078.live.subscriber.Subscriber;
+import com.tsingtech.jtt1078.live.subscriber.VideoSubscriber;
 import com.tsingtech.jtt1078.vo.AudioPacket;
 import com.tsingtech.jtt1078.vo.VideoPacket;
 import io.netty.buffer.ByteBuf;
@@ -90,15 +92,15 @@ public enum PublishManager {
         return false;
     }
 
-    public void initSubscribeChannel (Class<? extends Subscriber> subscriberType, String streamId, Channel channel) {
+    public void initSubscribeChannel (String streamId, Channel channel) {
         SubscribeChannel subscribeChannel = getSubscribeChannel(streamId);
-        subscribeChannel.setChannelType(subscriberType);
+        subscribeChannel.setChannelType(AudioSubscriber.class);
         subscribeChannel.setDeviceChannel(channel);
     }
 
-    public void initSubscribeChannel (Class<? extends Subscriber> subscriberType, String streamId, EventLoop eventLoop) {
+    public void initSubscribeChannel (String streamId, EventLoop eventLoop) {
         SubscribeChannel subscribeChannel = getSubscribeChannel(streamId);
-        subscribeChannel.setChannelType(subscriberType);
+        subscribeChannel.setChannelType(VideoSubscriber.class);
         subscribeChannel.setEventLoop(eventLoop);
     }
 

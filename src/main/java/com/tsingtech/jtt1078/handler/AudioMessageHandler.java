@@ -40,7 +40,7 @@ public class AudioMessageHandler extends AbstractMediaMessageHandler<AudioPacket
                     streamId, PT & 0x7f);
         }
 
-        PublishManager.INSTANCE.initSubscribeChannel(AudioSubscriber.class, streamId, ctx.channel());
+        PublishManager.INSTANCE.initSubscribeChannel(streamId, ctx.channel());
     }
 
     @Override

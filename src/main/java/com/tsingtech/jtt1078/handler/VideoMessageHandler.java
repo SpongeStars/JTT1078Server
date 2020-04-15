@@ -18,7 +18,7 @@ public class VideoMessageHandler extends AbstractMediaMessageHandler<VideoPacket
         if (log.isDebugEnabled()) {
             log.debug("A new device channel init and start to publish video, streamId = {}.", streamId);
         }
-        PublishManager.INSTANCE.initSubscribeChannel(VideoSubscriber.class, streamId, ctx.channel().eventLoop());
+        PublishManager.INSTANCE.initSubscribeChannel(streamId, ctx.channel().eventLoop());
     }
 
     @Override
