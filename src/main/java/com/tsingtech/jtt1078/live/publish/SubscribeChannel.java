@@ -9,6 +9,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoop;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,7 +37,8 @@ public class SubscribeChannel {
 
     // Signature(3 Byte)+Version(1 Byte)+Flags(1 Bypte)+DataOffset(4 Byte)
     private static final ByteBuf flvHeader = Unpooled.directBuffer(9)
-            .writeBytes(new byte[]{ 0x46, 0x4c, 0x56, 0x01, 0x05, 0x00, 0x00, 0x00, 0x09 });
+            .writeBytes(new byte[]{ 0x46, 0x4c, 0x56, 0x01, 0x01, 0x00, 0x00,
+                    0x00, 0x09, 0x00, 0x00, 0x00, 0x00 });
 
     private Channel deviceChannel;
 
@@ -80,9 +82,9 @@ public class SubscribeChannel {
 
 
         if (subscriber instanceof VideoSubscriber) {
-            subscriber.getChannel().writeAndFlush(flvHeader.retainedDuplicate());
+            subscriber.getChannel().writeAndFlush(new BinaryWebSocketFrame(flvHeader.retainedDuplicate()));
             if (sequenceHeader != null) {
-                subscriber.getChannel().writeAndFlush(sequenceHeader.retainedDuplicate(), subscriber.getChannel().voidPromise());
+                subscriber.getChannel().writeAndFlush(new BinaryWebSocketFrame(sequenceHeader.retainedDuplicate()), subscriber.getChannel().voidPromise());
             }
         } else {
             duration = ((AudioSubscriber)subscriber).getDuration();
