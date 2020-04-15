@@ -4,6 +4,7 @@ import com.tsingtech.jtt1078.live.subscriber.Subscriber;
 import com.tsingtech.jtt1078.vo.DataPacket;
 import com.tsingtech.jtt1078.vo.PacketWrapper;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoop;
 import io.netty.util.ReferenceCountUtil;
@@ -20,6 +21,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class SubscribeChannel {
 
     private final String channel;
+
+    // Signature(3 Byte)+Version(1 Byte)+Flags(1 Bypte)+DataOffset(4 Byte)
+    private static final ByteBuf flvHeader = Unpooled.directBuffer(9)
+            .writeBytes(new byte[]{ 0x46, 0x4c, 0x56, 0x01, 0x05, 0x00, 0x00, 0x00, 0x09 });
 
     private Channel producer;
 
@@ -52,9 +57,9 @@ public class SubscribeChannel {
     }
 
     public SubscribeChannel subscribe (Subscriber subscriber) {
+        subscriber.getChannel().writeAndFlush(flvHeader.retainedDuplicate());
         if (sequenceHeader != null) {
-            sequenceHeader.retain();
-            subscriber.getChannel().writeAndFlush(sequenceHeader.slice(), subscriber.getChannel().voidPromise());
+            subscriber.getChannel().writeAndFlush(sequenceHeader.retainedDuplicate(), subscriber.getChannel().voidPromise());
         }
         subscribers.add(subscriber);
         return this;
