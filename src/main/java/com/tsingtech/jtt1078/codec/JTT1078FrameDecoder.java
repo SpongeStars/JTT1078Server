@@ -6,6 +6,7 @@ import com.tsingtech.jtt1078.vo.VideoPacket;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
@@ -15,6 +16,7 @@ import java.util.List;
  * Mail: gwarmdll@gmail.com
  * 纵有疾风起，人生不言弃
  */
+@Slf4j
 public class JTT1078FrameDecoder extends ReplayingDecoder<JTT1078FrameDecoder.DecoderState> {
 
     public static final int PacketType_IFrame = 0x00;
@@ -98,7 +100,7 @@ public class JTT1078FrameDecoder extends ReplayingDecoder<JTT1078FrameDecoder.De
         } else if (type == PacketType_Transparent) {
             return Transparent_LengthFieldEndOffset;
         } else {
-            throw new RuntimeException();
+            throw new RuntimeException("unknown packet type: " + type);
         }
     }
 
@@ -108,7 +110,7 @@ public class JTT1078FrameDecoder extends ReplayingDecoder<JTT1078FrameDecoder.De
         } else if (type == PacketType_AudioFrame) {
             dataPacket = new AudioPacket();
         } else {
-            throw new RuntimeException();
+            throw new RuntimeException("unknown packet type: " + type);
         }
     }
 
