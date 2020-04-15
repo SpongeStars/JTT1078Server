@@ -21,6 +21,10 @@ public abstract class DataPacket {
 
     protected double frameRate;
 
+    public byte getPT() {
+        return (byte) (PT & 0x7f);
+    }
+
     protected byte PT;
 
     protected byte logicChannel;
