@@ -48,11 +48,6 @@ public enum PublishManager {
 //        }
 //    }
 
-    public void releaseSingleChannel(String streamId) {
-        channels.get(streamId).destroySubscribes();
-    }
-
-
     public void destroySingleSubscribeChannel(String streamId) {
         Optional.ofNullable(channels.remove(streamId)).ifPresent(SubscribeChannel::destroySubscribes);
     }

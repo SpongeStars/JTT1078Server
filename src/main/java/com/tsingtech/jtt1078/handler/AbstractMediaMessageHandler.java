@@ -99,13 +99,27 @@ public abstract class AbstractMediaMessageHandler<I extends DataPacket> extends 
     @Override
     public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
         if (match) {
-            PublishManager.INSTANCE.destroySingleSubscribeChannel(streamId);
-            if (compositeByteBuf != null) {
-                ReferenceCountUtil.safeRelease(compositeByteBuf);
-            }
+            log.info("Remote device client closed, streamId = {}", streamId);
+            release();
+        }
+        ctx.close(promise);
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        if (match) {
+            log.info("Remote device client came to inactive, streamId = {}", streamId);
+            release();
         }
 
-        ctx.close(promise);
+        ctx.fireChannelInactive();
+    }
+
+    private void release() {
+        PublishManager.INSTANCE.destroySingleSubscribeChannel(streamId);
+        if (compositeByteBuf != null) {
+            ReferenceCountUtil.safeRelease(compositeByteBuf);
+        }
     }
 
     @Override
@@ -113,10 +127,8 @@ public abstract class AbstractMediaMessageHandler<I extends DataPacket> extends 
             throws Exception {
         ctx.fireExceptionCaught(cause);
         if (match) {
-            PublishManager.INSTANCE.releaseSingleChannel(streamId);
-            if (compositeByteBuf != null) {
-                ReferenceCountUtil.safeRelease(compositeByteBuf);
-            }
+            log.warn("catch exception, streamId = {}", streamId);
+            release();
         }
     }
 

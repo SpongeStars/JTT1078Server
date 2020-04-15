@@ -1,6 +1,7 @@
 package com.tsingtech.jtt1078.handler;
 
 import io.netty.channel.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.net.SocketAddress;
 
@@ -9,6 +10,7 @@ import java.net.SocketAddress;
  * @mail chrisliu.top@gmail.com
  * @since 2020/4/1 13:29
  */
+@Slf4j
 @ChannelHandler.Sharable
 public class ExceptionHandler extends ChannelDuplexHandler {
 
@@ -16,6 +18,7 @@ public class ExceptionHandler extends ChannelDuplexHandler {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         // Uncaught exceptions from inbound handlers will propagate up to this handler
         cause.printStackTrace();
+        ctx.close();
     }
 
     @Override

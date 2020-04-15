@@ -60,5 +60,4 @@ public class AudioMessageHandler extends AbstractMediaMessageHandler<AudioPacket
             ctx.write(msg, promise);
         }
     }
-
 }
