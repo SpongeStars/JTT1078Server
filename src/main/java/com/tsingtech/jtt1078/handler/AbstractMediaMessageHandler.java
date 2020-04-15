@@ -9,12 +9,14 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author chrisliu
  * @mail chrisliu.top@gmail.com
  * @since 2020/4/7 10:10
  */
+@Slf4j
 public abstract class AbstractMediaMessageHandler<I extends DataPacket> extends ChannelDuplexHandler {
     protected String streamId;
     protected I dataPacket;
@@ -46,7 +48,6 @@ public abstract class AbstractMediaMessageHandler<I extends DataPacket> extends 
                 SubscribeChannel subscribeChannel = PublishManager.INSTANCE.getSubscribeChannel(streamId);
                 subscribeChannel.setEventLoop(ctx.channel().eventLoop());
                 init(ctx);
-                System.out.println(streamId);
                 channelRead0(ctx, imsg);
             } else {
                 ctx.fireChannelRead(msg);
@@ -77,15 +78,9 @@ public abstract class AbstractMediaMessageHandler<I extends DataPacket> extends 
                 }
                 compositeByteBuf = ctx.channel().alloc().compositeDirectBuffer(130)
                         .addComponent(true, subPacket.getBody());
-                if (compositeByteBuf.getByte(0) != 0) {
-                    System.out.println("====");
-                }
                 break;
             case 2:
                 dataPacket.setStreamId(streamId);
-                if (compositeByteBuf.getByte(compositeByteBuf.readerIndex()) != 0) {
-                    System.out.println("====");
-                }
                 dataPacket.setBody(compositeByteBuf
                         .addComponent(true, subPacket.getBody()));
                 publish(dataPacket);
@@ -97,7 +92,7 @@ public abstract class AbstractMediaMessageHandler<I extends DataPacket> extends 
                 break;
             default:
                 ReferenceCountUtil.safeRelease(subPacket.getBody());
-                System.out.println("unknow packet type");
+                log.warn("unknow packet type, type = {}", subPacket.getPacketPlace());
         }
     }
 
