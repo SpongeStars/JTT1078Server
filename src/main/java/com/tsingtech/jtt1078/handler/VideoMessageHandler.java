@@ -1,7 +1,6 @@
 package com.tsingtech.jtt1078.handler;
 
 import com.tsingtech.jtt1078.live.publish.PublishManager;
-import com.tsingtech.jtt1078.live.subscriber.VideoSubscriber;
 import com.tsingtech.jtt1078.vo.VideoPacket;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
