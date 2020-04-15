@@ -90,16 +90,20 @@ public enum PublishManager {
         return false;
     }
 
-    public void registerProducer(String streamId, Channel channel) {
-        getSubscribeChannel(streamId).registerProducer(channel);
+    public void initSubscribeChannel (Class<? extends Subscriber> subscriberType, String streamId, Channel channel) {
+        SubscribeChannel subscribeChannel = getSubscribeChannel(streamId);
+        subscribeChannel.setChannelType(subscriberType);
+        subscribeChannel.setDeviceChannel(channel);
     }
 
-    public void registerEventLoop(String streamId, EventLoop eventLoop) {
-        getSubscribeChannel(streamId).setEventLoop(eventLoop);
+    public void initSubscribeChannel (Class<? extends Subscriber> subscriberType, String streamId, EventLoop eventLoop) {
+        SubscribeChannel subscribeChannel = getSubscribeChannel(streamId);
+        subscribeChannel.setChannelType(subscriberType);
+        subscribeChannel.setEventLoop(eventLoop);
     }
 
     public void publish(String streamId, ByteBuf dataPacket) {
-        channels.get(streamId).p(dataPacket);
+        channels.get(streamId).publish2Device(dataPacket);
     }
 
 }
