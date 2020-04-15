@@ -88,6 +88,7 @@ public class JTT1078FrameDecoder extends ReplayingDecoder<JTT1078FrameDecoder.De
                 checkpoint(DecoderState.Decode_DeviceInfo);
                 break;
             default:
+                channelHandlerContext.channel().close(channelHandlerContext.voidPromise());
                 throw new RuntimeException("unexpected decoder state: " + state);
         }
     }
