@@ -3,6 +3,7 @@ package com.tsingtech.jtt1078.live.handler;
 import com.tsingtech.jtt1078.config.JTT1078ServerProperties;
 import com.tsingtech.jtt1078.handler.Jtt1078ServerChannelInitializer;
 import com.tsingtech.jtt1078.live.publish.PublishManager;
+import com.tsingtech.jtt1078.live.subscriber.AbstractSubscriber;
 import com.tsingtech.jtt1078.live.subscriber.AudioSubscriber;
 import com.tsingtech.jtt1078.live.subscriber.VideoSubscriber;
 import com.tsingtech.jtt1078.util.BeanUtil;
@@ -15,12 +16,14 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketServerCompressionHandler;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Optional;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.*;
 import static io.netty.handler.codec.http.HttpMethod.GET;
@@ -107,11 +110,17 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
             pipeline.addLast(new WebSocketServerCompressionHandler());
             handshaker.handshake(channel, req).addListener(future -> {
                 if (future.isSuccess()) {
+                    AttributeKey<AbstractSubscriber> subscriberKey = AttributeKey.valueOf("subscriber");
+                    AbstractSubscriber abstractSubscriber = null;
                     if (type.get(0).equals("1")) {
+                        abstractSubscriber = new VideoSubscriber(channel, streamId);
                         PublishManager.INSTANCE.subscribe(new VideoSubscriber(channel, streamId));
                     } else if (type.get(0).equals("2")) {
-                        PublishManager.INSTANCE.subscribe(new AudioSubscriber(channel, streamId));
+                        abstractSubscriber = new AudioSubscriber(channel, streamId);
+                        PublishManager.INSTANCE.subscribe(abstractSubscriber);
                     }
+                    Optional.ofNullable(abstractSubscriber).ifPresent(abstractSubscriber1 ->
+                            channel.attr(subscriberKey).set(abstractSubscriber1));
                 } else {
                     handshaker.close(channel, new CloseWebSocketFrame());
                 }
