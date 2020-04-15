@@ -18,11 +18,13 @@ import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketSe
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.*;
@@ -35,6 +37,7 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
  * Date: 2020-03-02 09:19
  * Mail: gwarmdll@gmail.com
  */
+@Slf4j
 @ChannelHandler.Sharable
 public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private static String app;
@@ -87,10 +90,31 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         }
 
         String streamId = path.substring(app.length());
-        List<String> type = decoder.parameters().get("type");
+        Map<String, List<String>> parameters = decoder.parameters();
+        List<String> type = parameters.get("type");
+        List<String> duration = parameters.get("duration");
         if (CollectionUtils.isEmpty(type) || StringUtils.isEmpty(type.get(0))) {
+            log.warn("The parameter type is absent.");
             sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, BAD_REQUEST));
             return;
+        }
+
+        double doubleDuration = 0;
+
+        if (type.get(0).equals("2")) {
+            if (CollectionUtils.isEmpty(duration)) {
+                log.warn("The parameter duration is absent.");
+                sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, BAD_REQUEST));
+                return;
+            } else {
+                try {
+                    doubleDuration = Double.parseDouble(duration.get(0));
+                } catch (NumberFormatException e) {
+                    log.warn("parameter duration can not convert to double java type, duration = {}", duration.get(0));
+                    sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, BAD_REQUEST));
+                    return;
+                }
+            }
         }
 
         if (!req.headers().contains(UPGRADE) || !req.headers().contains(SEC_WEBSOCKET_KEY) || !req.headers().contains(SEC_WEBSOCKET_VERSION)) {
@@ -108,15 +132,16 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
             pipeline.remove(ctx.name());
             pipeline.addLast(new IdleStateHandler(0, 10, 0));
             pipeline.addLast(new WebSocketServerCompressionHandler());
+            double finalDoubleDuration = doubleDuration;
             handshaker.handshake(channel, req).addListener(future -> {
                 if (future.isSuccess()) {
                     AttributeKey<AbstractSubscriber> subscriberKey = AttributeKey.valueOf("subscriber");
                     AbstractSubscriber abstractSubscriber = null;
                     if (type.get(0).equals("1")) {
                         abstractSubscriber = new VideoSubscriber(channel, streamId);
-                        PublishManager.INSTANCE.subscribe(new VideoSubscriber(channel, streamId));
+                        PublishManager.INSTANCE.subscribe(abstractSubscriber);
                     } else if (type.get(0).equals("2")) {
-                        abstractSubscriber = new AudioSubscriber(channel, streamId);
+                        abstractSubscriber = new AudioSubscriber(channel, streamId, finalDoubleDuration);
                         PublishManager.INSTANCE.subscribe(abstractSubscriber);
                     }
                     Optional.ofNullable(abstractSubscriber).ifPresent(abstractSubscriber1 ->
