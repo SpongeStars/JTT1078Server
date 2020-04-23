@@ -91,7 +91,7 @@ public class SubscribeChannel {
         }
         if (log.isDebugEnabled()) {
             log.debug("SubscribeChannel receive subscriber, type = {}, streamId = {}.",
-                    channelType != null ? channelType.getName() : subscriber.getClass().getSimpleName(),
+                    channelType != null ? channelType.getSimpleName() : subscriber.getClass().getSimpleName(),
                     subscriber.getStreamId());
         }
         subscribers.add(subscriber);

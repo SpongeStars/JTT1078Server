@@ -7,6 +7,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+
 /**
  * @author chrisliu
  * @mail chrisliu.top@gmail.com
@@ -25,20 +30,43 @@ public class AudioMessageHandler extends AbstractMediaMessageHandler<AudioPacket
 
     private static final byte[] separators = new byte[]{0x30, 0x31, 0x63, 0x64, (byte) 0x81};
 
-    @Override
-    protected void publish(AudioPacket dataPacket) {
-        PublishManager.INSTANCE.publish(streamId, dataPacket);
-    }
+    private boolean isHaisi;
 
     @Override
+    protected void publish(AudioPacket dataPacket) {
+        if (isHaisi) {
+            dataPacket.setBody(dataPacket.getBody().slice(4, dataPacket.getBody().readableBytes() - 4));
+//            dataPacket.getBody().skipBytes(4);
+//            System.out.println(dataPacket.getBody().readableBytes());
+            buffer.put(dataPacket.getBody().nioBuffer());
+            buffer.force();
+        }
+        PublishManager.INSTANCE.publish(streamId, dataPacket);
+    }
+    MappedByteBuffer buffer;
+    @Override
     protected void init(ChannelHandlerContext ctx) {
+        RandomAccessFile raf = null;
+        try {
+            raf = new RandomAccessFile("D:/015211539978_1_g726", "rw");
+            FileChannel channel = raf.getChannel();
+            buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, 70 * 1024);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         simRaw = dataPacket.getSimRaw();
-        PT = dataPacket.getPT();
+        PT = dataPacket.getRawPT();
         logicChannel= dataPacket.getLogicChannel();
         typeFlag = dataPacket.getTypeFlag();
         if (log.isDebugEnabled()) {
             log.debug("A new device channel init and start to publish audio, streamId = {}, PT = {}",
                     streamId, PT & 0x7f);
+        }
+        byte[] haisiHeader = new byte[4];
+        dataPacket.getBody().getBytes(0, haisiHeader);
+        if (haisiHeader[0] == 0x00 && haisiHeader[1] == 0x01 && haisiHeader[3] == 0x00
+                && haisiHeader[2] * 2 == dataPacket.getBody().readableBytes() - 4) {
+            this.isHaisi = true;
         }
 
         PublishManager.INSTANCE.initSubscribeChannel(streamId, ctx.channel());
