@@ -25,6 +25,10 @@ public abstract class DataPacket {
         return (byte) (PT & 0x7f);
     }
 
+    public byte getRawPT() {
+        return PT;
+    }
+
     protected byte PT;
 
     protected byte logicChannel;
