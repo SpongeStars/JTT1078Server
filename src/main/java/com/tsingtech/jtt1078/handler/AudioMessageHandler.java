@@ -55,7 +55,7 @@ public class AudioMessageHandler extends AbstractMediaMessageHandler<AudioPacket
 //            e.printStackTrace();
 //        }
         simRaw = dataPacket.getSimRaw();
-        PT = dataPacket.getRawPT();
+        PT = dataPacket.getPTRaw();
         logicChannel= dataPacket.getLogicChannel();
         typeFlag = dataPacket.getTypeFlag();
         if (log.isDebugEnabled()) {

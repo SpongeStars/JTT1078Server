@@ -22,14 +22,10 @@ public abstract class DataPacket {
     protected double frameRate;
 
     public byte getPT() {
-        return (byte) (PT & 0x7f);
+        return (byte) (PTRaw & 0x7f);
     }
 
-    public byte getRawPT() {
-        return PT;
-    }
-
-    protected byte PT;
+    protected byte PTRaw;
 
     protected byte logicChannel;
 
