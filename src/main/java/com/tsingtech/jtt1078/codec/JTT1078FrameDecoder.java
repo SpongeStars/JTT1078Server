@@ -61,7 +61,7 @@ public class JTT1078FrameDecoder extends ReplayingDecoder<JTT1078FrameDecoder.De
                 }
                 dataPacket.setTypeFlag(packetTypeField);
                 if (!hasInit && dataPacket != null) {
-                    dataPacket.setPT(in.getByte(in.readerIndex() + PTOffset));
+                    dataPacket.setPTRaw(in.getByte(in.readerIndex() + PTOffset));
                     byte[] simRaw = new byte[6];
                     in.getBytes(in.readerIndex() + SimFieldOffset, simRaw);
                     dataPacket.setSimRaw(simRaw);
