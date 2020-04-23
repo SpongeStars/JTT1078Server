@@ -38,22 +38,22 @@ public class AudioMessageHandler extends AbstractMediaMessageHandler<AudioPacket
             dataPacket.setBody(dataPacket.getBody().slice(4, dataPacket.getBody().readableBytes() - 4));
 //            dataPacket.getBody().skipBytes(4);
 //            System.out.println(dataPacket.getBody().readableBytes());
-            buffer.put(dataPacket.getBody().nioBuffer());
-            buffer.force();
+//            buffer.put(dataPacket.getBody().nioBuffer());
+//            buffer.force();
         }
         PublishManager.INSTANCE.publish(streamId, dataPacket);
     }
-    MappedByteBuffer buffer;
+//    MappedByteBuffer buffer;
     @Override
     protected void init(ChannelHandlerContext ctx) {
-        RandomAccessFile raf = null;
-        try {
-            raf = new RandomAccessFile("D:/015211539978_1_g726", "rw");
-            FileChannel channel = raf.getChannel();
-            buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, 70 * 1024);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        RandomAccessFile raf = null;
+//        try {
+//            raf = new RandomAccessFile("D:/015211539978_1_g726", "rw");
+//            FileChannel channel = raf.getChannel();
+//            buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, 70 * 1024);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
         simRaw = dataPacket.getSimRaw();
         PT = dataPacket.getRawPT();
         logicChannel= dataPacket.getLogicChannel();
