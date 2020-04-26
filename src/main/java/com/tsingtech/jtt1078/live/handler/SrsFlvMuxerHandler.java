@@ -160,6 +160,9 @@ public class SrsFlvMuxerHandler extends ChannelOutboundHandlerAdapter {
     private int searchAnnexbFrame (ByteBuf data, int src) {
         int index = src;
         for (;;) {
+            if (index - src > 20) {
+                return 0;
+            }
             if (data.getByte(index) == zeroByte && data.getByte(index + 1) == zeroByte) {
                 // match N[00] 00 00 01, where N>=0
                 if (data.getByte(index + 2) == (byte)0x01) {
